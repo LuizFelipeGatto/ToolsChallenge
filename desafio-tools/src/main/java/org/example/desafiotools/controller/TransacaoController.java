@@ -1,8 +1,10 @@
 package org.example.desafiotools.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.example.desafiotools.model.Transacao;
+import org.example.desafiotools.dto.PagamentoDTO;
+import org.example.desafiotools.dto.ResultadoOperacaoDTO;
 import org.example.desafiotools.service.TransacaoService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,8 +16,11 @@ public class TransacaoController {
     private final TransacaoService transacaoService;
 
     @PostMapping
-    public ResponseEntity<?> realizarTransacao(@RequestBody Transacao transacao) {
-        return ResponseEntity.ok(transacaoService.saveTransacao(transacao));
+    public ResponseEntity<String> realizarTransacao(@RequestBody PagamentoDTO pagamentoDTO) {
+        ResultadoOperacaoDTO<String> resultado = transacaoService.saveTransacao(pagamentoDTO.getTransacao());
+        return !resultado.isSucesso() ?
+                ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resultado.getMensagemErro())
+                : ResponseEntity.ok(resultado.getResultado());
     }
 
     @GetMapping
@@ -24,13 +29,19 @@ public class TransacaoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> buscarTransacaoPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(transacaoService.buscaTransacaoPorId(id));
+    public ResponseEntity<String> buscarTransacaoPorId(@PathVariable Long id) {
+        ResultadoOperacaoDTO<String> resultado = transacaoService.buscaTransacaoPorId(id);
+        return !resultado.isSucesso() ?
+                ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resultado.getMensagemErro())
+                : ResponseEntity.ok(resultado.getResultado());
     }
 
-    @PostMapping("/estorno")
-    public ResponseEntity<?> estornoTransacao(@RequestBody Transacao transacao) {
-        return ResponseEntity.ok(transacaoService.estornoTransacao(transacao));
+    @PostMapping("/estorno/{id}")
+    public ResponseEntity<?> estornoTransacao(@PathVariable Long id) {
+        ResultadoOperacaoDTO<String> resultado = transacaoService.estornoTransacao(id);
+        return !resultado.isSucesso() ?
+                ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resultado.getMensagemErro())
+                : ResponseEntity.ok(resultado.getResultado());
     }
 
 }

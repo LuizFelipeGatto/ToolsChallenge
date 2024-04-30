@@ -1,17 +1,17 @@
 package org.example.desafiotools.dto;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Builder
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class TransacaoDTO {
 
-    private Long id;
-
     private String cartao;
+
+    private Long id;
 
     private DescricaoDTO descricao;
 

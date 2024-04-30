@@ -3,6 +3,7 @@ package org.example.desafiotools.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.example.desafiotools.dto.TransacaoDTO;
 import org.example.desafiotools.enums.StatusFormaPagamento;
 import org.example.desafiotools.enums.StatusTransacao;
 
@@ -35,6 +36,9 @@ public class Transacao {
     @Enumerated(EnumType.STRING)
     private StatusFormaPagamento tipoPagamento;
 
+    @Transient
+    private String tipoPagamentoString;
+
     @Column
     @Enumerated(EnumType.STRING)
     private StatusTransacao status;
@@ -47,5 +51,30 @@ public class Transacao {
 
     @Column
     private Integer parcelas;
+
+    public Transacao () {
+
+    }
+
+    public Transacao (TransacaoDTO transacaoDTO) {
+        this.cartao = transacaoDTO.getCartao();
+        this.valor = transacaoDTO.getDescricao().getValor();
+        this.estabelecimento = transacaoDTO.getDescricao().getEstabelecimento();
+        this.codigoAutorizacao = transacaoDTO.getDescricao().getCodigoAutorizacao();
+        this.nsu = transacaoDTO.getDescricao().getNsu();
+        this.parcelas = transacaoDTO.getFormaPagamento().getParcelas();
+    }
+
+    public Transacao (TransacaoDTO transacaoDTO, String status) {
+        this.cartao = transacaoDTO.getCartao();
+        this.valor = transacaoDTO.getDescricao().getValor();
+        this.estabelecimento = transacaoDTO.getDescricao().getEstabelecimento();
+        this.codigoAutorizacao = transacaoDTO.getDescricao().getCodigoAutorizacao();
+        this.nsu = transacaoDTO.getDescricao().getNsu();
+        this.parcelas = transacaoDTO.getFormaPagamento().getParcelas();
+        this.status = StatusTransacao.valueOf(status);
+        this.dataHora = LocalDateTime.now();
+        this.tipoPagamento = StatusFormaPagamento.valueOf(transacaoDTO.getFormaPagamento().getTipo());
+    }
 
 }
