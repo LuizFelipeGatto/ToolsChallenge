@@ -5,10 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class FormaPagamentoDTO {
+public class PagamentoDTO {
 
-    private String tipo;
-
-    private Integer parcelas;
+    private TransacaoDTO transacao;
 }
-
