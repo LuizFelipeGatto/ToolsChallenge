@@ -19,6 +19,10 @@ public class Constants {
 
     public static final String ESTORNO_REALIZADO_ANTES = "O Estorno já foi realizado.";
 
+    public static final String NUMERO_FALTANTE = "Não encontramos o número do cartão.";
+
+    public static final String VERIFIQUE_DADOS = "Verifique os dados enviados.";
+
     public static List<String> getTiposFormaPagamento() {
         return Arrays.asList(StatusFormaPagamento.AVISTA.name(), StatusFormaPagamento.PARCELADO_LOJA.name(), StatusFormaPagamento.PARCELADO_EMISSOR.name());
     }

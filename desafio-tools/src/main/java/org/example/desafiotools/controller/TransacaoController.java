@@ -18,10 +18,9 @@ public class TransacaoController {
     @PostMapping
     public ResponseEntity<String> realizarTransacao(@RequestBody PagamentoDTO pagamentoDTO) {
         ResultadoOperacaoDTO<String> resultado = transacaoService.saveTransacao(pagamentoDTO.getTransacao());
-        if(!resultado.isSucesso()){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resultado.getMensagemErro());
-        }
-        return ResponseEntity.ok(resultado.getResultado());
+        return !resultado.isSucesso() ?
+                ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resultado.getMensagemErro())
+                : ResponseEntity.ok(resultado.getResultado());
     }
 
     @GetMapping

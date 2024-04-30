@@ -32,6 +32,10 @@ public class TransacaoService {
 
     @Transactional
     public ResultadoOperacaoDTO<String> saveTransacao(TransacaoDTO transacaoDTO) {
+        if (!validaDadosRecebidos(transacaoDTO)) {
+            return new ResultadoOperacaoDTO<>(false, null, Constants.VERIFIQUE_DADOS);
+        }
+
         Transacao transacao = new Transacao(transacaoDTO);
         transacao.setTipoPagamento(setarTipoPagamento(transacaoDTO.getFormaPagamento().getTipo()));
 
@@ -51,14 +55,19 @@ public class TransacaoService {
             return new ResultadoOperacaoDTO<>(false, null, Constants.DIGITOS_LETRAS);
         }
 
-        transacao.setDataHora(LocalDateTime.now());
-        transacao.setNsu(gerarNsu());
-        transacao.setStatus(StatusTransacao.AUTORIZADO);
-        transacao.setCodigoAutorizacao(gerarCodigoAutorizacao());
+        try{
+            transacao.setDataHora(LocalDateTime.now());
+            transacao.setNsu(gerarNsu());
+            transacao.setStatus(StatusTransacao.AUTORIZADO);
+            transacao.setCodigoAutorizacao(gerarCodigoAutorizacao());
 
-        Transacao transacaoSalva = transacaoRepository.save(transacao);
+            Transacao transacaoSalva = transacaoRepository.save(transacao);
 
-        return new ResultadoOperacaoDTO<>(true, converteToJson(populaDto(transacaoSalva)), null);
+            return new ResultadoOperacaoDTO<>(true, converteToJson(populaDto(transacaoSalva)), null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResultadoOperacaoDTO<>(false, null, "Ocorreu um erro ao processar os dados.");
+        }
     }
 
     @Transactional
@@ -100,7 +109,6 @@ public class TransacaoService {
     }
 
     private TransacaoDTO populaDto(Transacao transacao) {
-
         DescricaoDTO descricaoDTO = new DescricaoDTO();
         descricaoDTO.setCodigoAutorizacao(transacao.getCodigoAutorizacao());
         descricaoDTO.setStatus(transacao.getStatus().name());
@@ -169,6 +177,16 @@ public class TransacaoService {
         Random random = new Random();
         int numero = 1000000000 + random.nextInt(900000000);
         return String.valueOf(numero);
+    }
+
+    private boolean validaDadosRecebidos(TransacaoDTO transacaoDTO) {
+        if (Objects.isNull(transacaoDTO.getCartao()) || Objects.isNull(transacaoDTO.getDescricao().getValor())
+                || Objects.isNull(transacaoDTO.getDescricao().getEstabelecimento())
+                || Objects.isNull(transacaoDTO.getFormaPagamento().getTipo())
+                || Objects.isNull(transacaoDTO.getFormaPagamento().getParcelas())) {
+            return false;
+        }
+        return true;
     }
 
 }
