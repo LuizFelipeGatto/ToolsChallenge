@@ -1,6 +1,8 @@
 # Tools Challenge
 
 Projeto para implementar uma API de Pagamentos de um banco com algumas funcionalidades que serão descritas ao longo deste README.
+Escolhi desenvolver utilizando SpringBoot por ser a forma como trabalhei nos últimos projetos que participei e mesmo não sendo necessário, resolvi persistir os dados em um banco de dados para mostrar como tenho trabalhado ultimamente. 
+
 
 
 # Tecnologias
@@ -20,7 +22,7 @@ Após isso, crie um banco de dados postgreSQL e abra o arquivo ``application.pro
      spring.datasource.username = postgres
      spring.datasource.password = postgres
 
-O flyway criará automaticamente o schema no banco de dados e também a tabela da transação. Feito isso, o sistema está configurado para aceitar as requisições via ```POSTMAN``` ou ```THUNDER CLIENT do VsCode```.
+O flyway criará automaticamente o schema no banco de dados e também a tabela da transação. Feito isso, o sistema estará configurado para aceitar as requisições via ```POSTMAN``` ou ```THUNDER CLIENT do VsCode```.
 
 # API'S
 
@@ -31,18 +33,19 @@ As operações serão as seguintes:
   
    JSON:
      ```{
-        "transacao": {
-          "cartao": "0123456789123456789",
-          "descricao": {
-            "valor": 123.25,
-            "estabelecimento": "teste"
-          },
-          "formaPagamento": {
-            "tipo": "AVISTA",
-            "parcelas": 1
+       {
+          "transacao": {
+            "cartao": "0123456789123456789",
+            "descricao": {
+              "valor": 123.25,
+              "estabelecimento": "PetShop Mundo Cão"
+            },
+            "formaPagamento": {
+              "tipo": "AVISTA",
+              "parcelas": 1
+            }
           }
         }
-      }
     
 - Estorno: método POST - http://localhost:8080/transacao/estorno/{id}
 
