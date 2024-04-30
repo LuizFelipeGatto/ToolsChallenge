@@ -2,6 +2,7 @@ package org.example.desafiotools.service;
 
 import org.example.desafiotools.dto.DescricaoDTO;
 import org.example.desafiotools.dto.FormaPagamentoDTO;
+import org.example.desafiotools.dto.ResultadoOperacaoDTO;
 import org.example.desafiotools.dto.TransacaoDTO;
 import org.example.desafiotools.enums.StatusFormaPagamento;
 import org.example.desafiotools.enums.StatusTransacao;
@@ -10,103 +11,74 @@ import org.example.desafiotools.repository.TransacaoRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
-import java.time.LocalDateTime;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
-//@DataJpaTest
-//@ActiveProfiles("test")
+@DataJpaTest
 @ExtendWith(MockitoExtension.class)
 class TransacaoServiceTest {
 
     @Mock
     private TransacaoRepository transacaoRepository;
 
-    @InjectMocks
-    private TransacaoService transacaoService;
-
-//    @BeforeEach
-//    void setUp() {
-//        MockitoAnnotations.initMocks(this);
-//    }
-
     @Test
-    @DisplayName("Sucesso em salvar a transação.")
-    void saveTransacaoValidSuccess() {
+    @DisplayName("Teste de salvar a transação.")
+    public void testSaveTransacao() {
         TransacaoDTO transacaoDTO = createTransacaoDTO();
-        Transacao transacao = createTransacao(transacaoDTO);
+        Transacao transacao = new Transacao(transacaoDTO, transacaoDTO.getDescricao().getStatus());
+
         when(transacaoRepository.save(any(Transacao.class))).thenReturn(transacao);
 
-//        String result = transacaoService.saveTransacao(transacaoDTO);
+        TransacaoService transacaoService = new TransacaoService(transacaoRepository);
 
-        // Verifica se o resultado contém JSON esperado
-//        assertEquals(createExpectedJson(), result);
-//        assert result != null;
+        ResultadoOperacaoDTO<String> resultado = transacaoService.saveTransacao(transacaoDTO);
+
+        assertEquals(true, resultado.isSucesso());
     }
 
     @Test
-    void estornoTransacao() {
+    @DisplayName("Teste de estorno da transação.")
+    public void testEstornoTransacao() {
+        Long id = 1L;
+
+        Transacao transacao = new Transacao();
+        transacao.setStatus(StatusTransacao.AUTORIZADO);
+        transacao.setTipoPagamento(StatusFormaPagamento.AVISTA);
+        transacao.setCartao("1234567891234567");
+
+        when(transacaoRepository.findById(id)).thenReturn(java.util.Optional.of(transacao));
+        when(transacaoRepository.save(any(Transacao.class))).thenReturn(transacao);
+
+        TransacaoService transacaoService = new TransacaoService(transacaoRepository);
+
+        ResultadoOperacaoDTO<String> resultado = transacaoService.estornoTransacao(id);
+
+        assertEquals(true, resultado.isSucesso());
+        assertEquals(StatusTransacao.CANCELADO, transacao.getStatus());
     }
 
-    @Test
-    void listTransacoes() {
-    }
-
-    @Test
-    void buscaTransacaoPorId() {
-    }
-
-    @Test
-    void converteDigitos() {
-    }
-
-    @Test
-    void numeroCartaoCriptografado() {
-    }
-
-    public TransacaoDTO createTransacaoDTO() {
+    private TransacaoDTO createTransacaoDTO() {
         TransacaoDTO transacaoDTO = new TransacaoDTO();
-        transacaoDTO.setCartao("0123456789123456");
-        transacaoDTO.setFormaPagamento(createFormaPagamentoDTO());
-        transacaoDTO.setDescricao(createDescricao());
-        return transacaoDTO;
-    }
+        transacaoDTO.setId(1L);
+        transacaoDTO.setCartao("1234567891234567");
 
-    private FormaPagamentoDTO createFormaPagamentoDTO() {
+        DescricaoDTO descricaoDTO = new DescricaoDTO();
+        descricaoDTO.setValor(125.25);
+        descricaoDTO.setStatus(StatusTransacao.AUTORIZADO.name());
+        descricaoDTO.setEstabelecimento("Estabelecimento X");
+
         FormaPagamentoDTO formaPagamentoDTO = new FormaPagamentoDTO();
         formaPagamentoDTO.setTipo(StatusFormaPagamento.AVISTA.name());
         formaPagamentoDTO.setParcelas(1);
-        return formaPagamentoDTO;
-    }
 
-    private DescricaoDTO createDescricao() {
-        DescricaoDTO descricaoDTO = new DescricaoDTO();
-        descricaoDTO.setValor(100.0);
-        return descricaoDTO;
-    }
-
-    private Transacao createTransacao(TransacaoDTO transacaoDTO) {
-        Transacao transacao = new Transacao(transacaoDTO);
-        transacao.setId(1L);
-        transacao.setDataHora(LocalDateTime.now());
-        transacao.setStatus(StatusTransacao.AUTORIZADO);
-        transacao.setCodigoAutorizacao("1234567890");
-        transacao.setNsu("1234567890123456");
-        transacao.setValor(100.0);
-        transacao.setEstabelecimento("Estabelecimento");
-        transacao.setTipoPagamento(StatusFormaPagamento.AVISTA);
-        transacao.setParcelas(1);
-        return transacao;
-    }
-
-    private String createExpectedJson() {
-        return "{\"transacao\":{\"id\":1,\"cartao\":\"************3456\",\"descricao\":{\"codigoAutorizacao\":\"1234567890\",\"status\":\"AUTORIZADO\",\"nsu\":\"1234567890123456\",\"valor\":100.0,\"estabelecimento\":\"Estabelecimento\",\"dataHora\":\"2024-04-29T12:00:00\"},\"formaPagamento\":{\"tipo\":\"AVISTA\",\"parcelas\":1}}}";
+        transacaoDTO.setDescricao(descricaoDTO);
+        transacaoDTO.setFormaPagamento(formaPagamentoDTO);
+        return transacaoDTO;
     }
 }

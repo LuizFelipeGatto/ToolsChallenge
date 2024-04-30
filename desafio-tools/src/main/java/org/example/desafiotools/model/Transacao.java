@@ -65,4 +65,16 @@ public class Transacao {
         this.parcelas = transacaoDTO.getFormaPagamento().getParcelas();
     }
 
+    public Transacao (TransacaoDTO transacaoDTO, String status) {
+        this.cartao = transacaoDTO.getCartao();
+        this.valor = transacaoDTO.getDescricao().getValor();
+        this.estabelecimento = transacaoDTO.getDescricao().getEstabelecimento();
+        this.codigoAutorizacao = transacaoDTO.getDescricao().getCodigoAutorizacao();
+        this.nsu = transacaoDTO.getDescricao().getNsu();
+        this.parcelas = transacaoDTO.getFormaPagamento().getParcelas();
+        this.status = StatusTransacao.valueOf(status);
+        this.dataHora = LocalDateTime.now();
+        this.tipoPagamento = StatusFormaPagamento.valueOf(transacaoDTO.getFormaPagamento().getTipo());
+    }
+
 }
