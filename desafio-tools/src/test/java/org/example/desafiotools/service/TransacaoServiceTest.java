@@ -1,8 +1,8 @@
 package org.example.desafiotools.service;
 
 import org.example.desafiotools.dto.DescricaoDTO;
+import org.example.desafiotools.dto.DetalhamentoTransacaoDTO;
 import org.example.desafiotools.dto.FormaPagamentoDTO;
-import org.example.desafiotools.dto.ResultadoOperacaoDTO;
 import org.example.desafiotools.dto.TransacaoDTO;
 import org.example.desafiotools.enums.StatusFormaPagamento;
 import org.example.desafiotools.enums.StatusTransacao;
@@ -14,6 +14,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,16 +32,16 @@ class TransacaoServiceTest {
     @Test
     @DisplayName("Teste de salvar a transação.")
     public void testSaveTransacao() {
-        TransacaoDTO transacaoDTO = createTransacaoDTO();
-        Transacao transacao = new Transacao(transacaoDTO, transacaoDTO.getDescricao().getStatus());
+        DetalhamentoTransacaoDTO detalhamentoTransacaoDto = createTransacaoDTO();
+        Transacao transacao = new Transacao(detalhamentoTransacaoDto, detalhamentoTransacaoDto.getDescricao().getStatus());
 
         when(transacaoRepository.save(any(Transacao.class))).thenReturn(transacao);
 
         TransacaoService transacaoService = new TransacaoService(transacaoRepository);
 
-        ResultadoOperacaoDTO<String> resultado = transacaoService.saveTransacao(transacaoDTO);
+        TransacaoDTO resultado = transacaoService.saveTransacao(detalhamentoTransacaoDto);
 
-        assertEquals(true, resultado.isSucesso());
+        assertEquals(true, Objects.nonNull(resultado));
     }
 
     @Test
@@ -57,16 +59,16 @@ class TransacaoServiceTest {
 
         TransacaoService transacaoService = new TransacaoService(transacaoRepository);
 
-        ResultadoOperacaoDTO<String> resultado = transacaoService.estornoTransacao(id);
+        TransacaoDTO resultado = transacaoService.estornoTransacao(id);
 
-        assertEquals(true, resultado.isSucesso());
+        assertEquals(true, Objects.nonNull(resultado));
         assertEquals(StatusTransacao.CANCELADO, transacao.getStatus());
     }
 
-    private TransacaoDTO createTransacaoDTO() {
-        TransacaoDTO transacaoDTO = new TransacaoDTO();
-        transacaoDTO.setId(1L);
-        transacaoDTO.setCartao("1234567891234567");
+    private DetalhamentoTransacaoDTO createTransacaoDTO() {
+        DetalhamentoTransacaoDTO detalhamentoTransacaoDto = new DetalhamentoTransacaoDTO();
+        detalhamentoTransacaoDto.setId(1L);
+        detalhamentoTransacaoDto.setCartao("1234567891234567");
 
         DescricaoDTO descricaoDTO = new DescricaoDTO();
         descricaoDTO.setValor(125.25);
@@ -77,8 +79,8 @@ class TransacaoServiceTest {
         formaPagamentoDTO.setTipo(StatusFormaPagamento.AVISTA.name());
         formaPagamentoDTO.setParcelas(1);
 
-        transacaoDTO.setDescricao(descricaoDTO);
-        transacaoDTO.setFormaPagamento(formaPagamentoDTO);
-        return transacaoDTO;
+        detalhamentoTransacaoDto.setDescricao(descricaoDTO);
+        detalhamentoTransacaoDto.setFormaPagamento(formaPagamentoDTO);
+        return detalhamentoTransacaoDto;
     }
 }

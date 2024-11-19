@@ -3,16 +3,18 @@ package org.example.desafiotools.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.example.desafiotools.dto.TransacaoDTO;
+import org.example.desafiotools.dto.DetalhamentoTransacaoDTO;
 import org.example.desafiotools.enums.StatusFormaPagamento;
 import org.example.desafiotools.enums.StatusTransacao;
+import org.example.desafiotools.util.Constants;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Getter
 @Setter
 @Entity(name = "transacao")
-@Table(schema = "desafio")
+@Table(schema = Constants.SCHEMA_DESAFIO)
 public class Transacao {
 
     @Id
@@ -56,25 +58,25 @@ public class Transacao {
 
     }
 
-    public Transacao (TransacaoDTO transacaoDTO) {
-        this.cartao = transacaoDTO.getCartao();
-        this.valor = transacaoDTO.getDescricao().getValor();
-        this.estabelecimento = transacaoDTO.getDescricao().getEstabelecimento();
-        this.codigoAutorizacao = transacaoDTO.getDescricao().getCodigoAutorizacao();
-        this.nsu = transacaoDTO.getDescricao().getNsu();
-        this.parcelas = transacaoDTO.getFormaPagamento().getParcelas();
+    public Transacao (DetalhamentoTransacaoDTO detalhamentoTransacaoDto) {
+        this.cartao = detalhamentoTransacaoDto.getCartao();
+        this.valor = detalhamentoTransacaoDto.getDescricao().getValor();
+        this.estabelecimento = detalhamentoTransacaoDto.getDescricao().getEstabelecimento();
+        this.codigoAutorizacao = detalhamentoTransacaoDto.getDescricao().getCodigoAutorizacao();
+        this.nsu = detalhamentoTransacaoDto.getDescricao().getNsu();
+        this.parcelas = Objects.nonNull(detalhamentoTransacaoDto.getFormaPagamento().getParcelas()) ? detalhamentoTransacaoDto.getFormaPagamento().getParcelas() : 1;
     }
 
-    public Transacao (TransacaoDTO transacaoDTO, String status) {
-        this.cartao = transacaoDTO.getCartao();
-        this.valor = transacaoDTO.getDescricao().getValor();
-        this.estabelecimento = transacaoDTO.getDescricao().getEstabelecimento();
-        this.codigoAutorizacao = transacaoDTO.getDescricao().getCodigoAutorizacao();
-        this.nsu = transacaoDTO.getDescricao().getNsu();
-        this.parcelas = transacaoDTO.getFormaPagamento().getParcelas();
+    public Transacao (DetalhamentoTransacaoDTO detalhamentoTransacaoDto, String status) {
+        this.cartao = detalhamentoTransacaoDto.getCartao();
+        this.valor = detalhamentoTransacaoDto.getDescricao().getValor();
+        this.estabelecimento = detalhamentoTransacaoDto.getDescricao().getEstabelecimento();
+        this.codigoAutorizacao = detalhamentoTransacaoDto.getDescricao().getCodigoAutorizacao();
+        this.nsu = detalhamentoTransacaoDto.getDescricao().getNsu();
+        this.parcelas = Objects.nonNull(detalhamentoTransacaoDto.getFormaPagamento().getParcelas()) ? detalhamentoTransacaoDto.getFormaPagamento().getParcelas() : 1;
         this.status = StatusTransacao.valueOf(status);
         this.dataHora = LocalDateTime.now();
-        this.tipoPagamento = StatusFormaPagamento.valueOf(transacaoDTO.getFormaPagamento().getTipo());
+        this.tipoPagamento = StatusFormaPagamento.valueOf(detalhamentoTransacaoDto.getFormaPagamento().getTipo());
     }
 
 }
