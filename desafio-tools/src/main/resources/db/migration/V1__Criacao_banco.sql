@@ -11,7 +11,7 @@ CREATE TABLE desafio.transacao (
     status VARCHAR(25),
     nsu VARCHAR(50),
     codigo_autorizacao VARCHAR(30),
-    parcelas INT,
+    parcelas INT DEFAULT 1,
 
     PRIMARY KEY (id)
 );

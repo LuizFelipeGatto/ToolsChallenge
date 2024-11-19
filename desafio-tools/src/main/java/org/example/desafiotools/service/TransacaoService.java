@@ -1,12 +1,10 @@
 package org.example.desafiotools.service;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.desafiotools.dto.DescricaoDTO;
+import org.example.desafiotools.dto.DetalhamentoTransacaoDTO;
 import org.example.desafiotools.dto.FormaPagamentoDTO;
-import org.example.desafiotools.dto.ResultadoOperacaoDTO;
 import org.example.desafiotools.dto.TransacaoDTO;
 import org.example.desafiotools.enums.StatusFormaPagamento;
 import org.example.desafiotools.enums.StatusTransacao;
@@ -14,12 +12,16 @@ import org.example.desafiotools.model.Transacao;
 import org.example.desafiotools.repository.TransacaoRepository;
 import org.example.desafiotools.util.Constants;
 import org.example.desafiotools.util.DataUtils;
+import org.example.desafiotools.util.Error;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,84 +33,58 @@ public class TransacaoService {
     private final TransacaoRepository transacaoRepository;
 
     @Transactional
-    public ResultadoOperacaoDTO<String> saveTransacao(TransacaoDTO transacaoDTO) {
-        if (!validaDadosRecebidos(transacaoDTO)) {
-            return new ResultadoOperacaoDTO<>(false, null, Constants.VERIFIQUE_DADOS);
+    public TransacaoDTO saveTransacao(DetalhamentoTransacaoDTO detalhamentoTransacaoDto) {
+        StatusFormaPagamento statusFormaPagamento = StatusFormaPagamento.fromString(detalhamentoTransacaoDto.getFormaPagamento().getTipo());
+
+        if(statusFormaPagamento.equals(StatusFormaPagamento.INVALIDO)) {
+            Error.lancaErro(Constants.FORMA_PAGAMENTO_INVALIDA);
         }
 
-        Transacao transacao = new Transacao(transacaoDTO);
-        transacao.setTipoPagamento(setarTipoPagamento(transacaoDTO.getFormaPagamento().getTipo()));
+        Transacao transacao = new Transacao(detalhamentoTransacaoDto);
+        transacao.setTipoPagamento(statusFormaPagamento);
+        transacao.setDataHora(LocalDateTime.now());
+        transacao.setNsu(gerarNsu());
+        transacao.setStatus(StatusTransacao.AUTORIZADO);
+        transacao.setCodigoAutorizacao(gerarCodigoAutorizacao());
 
-        if (!Constants.getTiposFormaPagamento().contains(transacao.getTipoPagamento().name())) {
-            return new ResultadoOperacaoDTO<>(false, null, Constants.FORMA_PAGAMENTO_INVALIDA);
-        }
+        transacaoRepository.save(transacao);
 
-        if (verificaDigitosCartao(transacao.getCartao())) {
-            if(transacao.getCartao().length() > 19) {
-                return new ResultadoOperacaoDTO<>(false, null, Constants.DIGITOS_EXCESSO);
-            }
-
-            if(transacao.getCartao().length() < 15) {
-                return new ResultadoOperacaoDTO<>(false, null, Constants.DIGITOS_FALTANTES);
-            }
-        } else {
-            return new ResultadoOperacaoDTO<>(false, null, Constants.DIGITOS_LETRAS);
-        }
-
-        try{
-            transacao.setDataHora(LocalDateTime.now());
-            transacao.setNsu(gerarNsu());
-            transacao.setStatus(StatusTransacao.AUTORIZADO);
-            transacao.setCodigoAutorizacao(gerarCodigoAutorizacao());
-
-            Transacao transacaoSalva = transacaoRepository.save(transacao);
-
-            return new ResultadoOperacaoDTO<>(true, converteToJson(populaDto(transacaoSalva)), null);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ResultadoOperacaoDTO<>(false, null, "Ocorreu um erro ao processar os dados.");
-        }
+        return retornoTransacao(transacao);
     }
 
     @Transactional
-    public ResultadoOperacaoDTO<String> estornoTransacao(Long id) {
-        Transacao transacaoBuscada = transacaoRepository.findById(id).orElse(null);
-        if(Objects.isNull(transacaoBuscada)) {
-            return new ResultadoOperacaoDTO<>(false, null, Constants.TRANSACAO_NAO_ENCONTRADA);
+    public TransacaoDTO estornoTransacao(Long id) {
+        Optional<Transacao> transacaoOpt = transacaoRepository.findById(id);
+
+        if(transacaoOpt.isEmpty()) {
+            Error.lancaErro(Constants.TRANSACAO_NAO_ENCONTRADA, id);
         }
 
+        Transacao transacaoBuscada = transacaoOpt.get();
+
         if(transacaoBuscada.getStatus().equals(StatusTransacao.CANCELADO)) {
-            return new ResultadoOperacaoDTO<>(false, null, Constants.ESTORNO_REALIZADO_ANTES);
+            Error.lancaErro(Constants.ESTORNO_REALIZADO_ANTES, id);
         }
 
         transacaoBuscada.setStatus(StatusTransacao.CANCELADO);
         transacaoBuscada.setDataHora(LocalDateTime.now());
         transacaoRepository.save(transacaoBuscada);
 
-        return new ResultadoOperacaoDTO<>(true, converteToJson(populaDto(transacaoBuscada)), null);
+        return retornoTransacao(transacaoBuscada);
     }
 
     public List<TransacaoDTO> listTransacoes() {
-        List<Transacao> lista = transacaoRepository.findAll();
-        if(!lista.isEmpty()) {
-            return lista.stream().map(this::populaDto).collect(Collectors.toList());
-        }
-        return new ArrayList<>();
+        return transacaoRepository.findAll()
+                    .stream()
+                    .map(this::retornoTransacao)
+                    .collect(Collectors.toList());
     }
 
-    public ResultadoOperacaoDTO<String> buscaTransacaoPorId(Long id) {
-        Optional<Transacao> transacaoBuscada = transacaoRepository.findById(id);
-        if(transacaoBuscada.isPresent()) {
-            return new ResultadoOperacaoDTO<>(true, converteToJson(populaDto(transacaoBuscada.get())), null);
-        }
-        return new ResultadoOperacaoDTO<>(false, null, Constants.TRANSACAO_NAO_ENCONTRADA);
+    public TransacaoDTO buscaTransacaoPorId(Long id) {
+        return transacaoRepository.findById(id).map(this::retornoTransacao).orElse(null);
     }
 
-    private boolean verificaDigitosCartao (String numeroCartao) {
-        return numeroCartao.matches("[0-9]+");
-    }
-
-    private TransacaoDTO populaDto(Transacao transacao) {
+    private TransacaoDTO retornoTransacao(Transacao transacao) {
         DescricaoDTO descricaoDTO = new DescricaoDTO();
         descricaoDTO.setCodigoAutorizacao(transacao.getCodigoAutorizacao());
         descricaoDTO.setStatus(transacao.getStatus().name());
@@ -121,40 +97,27 @@ public class TransacaoService {
         formaPagamentoDTO.setTipo(transacao.getTipoPagamento().name());
         formaPagamentoDTO.setParcelas(transacao.getParcelas());
 
-        return TransacaoDTO
+        DetalhamentoTransacaoDTO transacaoDto = DetalhamentoTransacaoDTO
                 .builder()
                 .id(transacao.getId())
                 .cartao(numeroCartaoCriptografado(transacao.getCartao()))
                 .descricao(descricaoDTO)
                 .formaPagamento(formaPagamentoDTO)
                 .build();
+
+        return TransacaoDTO
+                .builder()
+                .transacao(transacaoDto)
+                .build();
     }
 
-    private String converteToJson(TransacaoDTO transacaoDTO) {
-        JsonObject jsonObject = new JsonObject();
-        jsonObject.add("transacao", new Gson().toJsonTree(transacaoDTO));
-        return new Gson().toJson(jsonObject);
-    }
-
-    private StatusFormaPagamento setarTipoPagamento(String tipoPagamento) {
-       if(tipoPagamento.equals(StatusFormaPagamento.AVISTA.name())) {
-           return StatusFormaPagamento.AVISTA;
-       } else if(tipoPagamento.equals(StatusFormaPagamento.PARCELADO_LOJA.name())) {
-           return StatusFormaPagamento.PARCELADO_LOJA;
-       } else if (tipoPagamento.equals(StatusFormaPagamento.PARCELADO_EMISSOR.name())) {
-           return StatusFormaPagamento.PARCELADO_EMISSOR;
-       } else {
-           return StatusFormaPagamento.INVALIDO;
-       }
-    }
-
-    public int[] converteDigitos (String numeroCartao) {
+    private int[] converteDigitos (String numeroCartao) {
         Long numero = Long.parseLong(numeroCartao);
         String numeroString = String.valueOf(numero);
         return Arrays.stream(numeroString.split("")).mapToInt(Integer::parseInt).toArray();
     }
 
-    public String numeroCartaoCriptografado (String numeroCartao) {
+    private String numeroCartaoCriptografado (String numeroCartao) {
         int[] digitos = converteDigitos(numeroCartao);
 
         List<Integer> numerosMostrados = Arrays.stream(digitos).boxed().limit(2).collect(Collectors.toList());
@@ -170,23 +133,13 @@ public class TransacaoService {
         Random random = new Random();
         int numeroAleatorio = 100 + random.nextInt(900);
 
-        return String.valueOf(timestamp) + String.valueOf(numeroAleatorio);
+        return timestamp + String.valueOf(numeroAleatorio);
     }
 
     private String gerarCodigoAutorizacao() {
         Random random = new Random();
         int numero = 1000000000 + random.nextInt(900000000);
         return String.valueOf(numero);
-    }
-
-    private boolean validaDadosRecebidos(TransacaoDTO transacaoDTO) {
-        if (Objects.isNull(transacaoDTO.getCartao()) || Objects.isNull(transacaoDTO.getDescricao().getValor())
-                || Objects.isNull(transacaoDTO.getDescricao().getEstabelecimento())
-                || Objects.isNull(transacaoDTO.getFormaPagamento().getTipo())
-                || Objects.isNull(transacaoDTO.getFormaPagamento().getParcelas())) {
-            return false;
-        }
-        return true;
     }
 
 }

@@ -1,6 +1,8 @@
 package org.example.desafiotools.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.example.desafiotools.util.Constants;
 
 @Builder
 @Getter
@@ -9,12 +11,7 @@ import lombok.*;
 @NoArgsConstructor
 public class TransacaoDTO {
 
-    private String cartao;
-
-    private Long id;
-
-    private DescricaoDTO descricao;
-
-    private FormaPagamentoDTO formaPagamento;
+    @NotNull(message = Constants.VERIFIQUE_DADOS)
+    private DetalhamentoTransacaoDTO transacao;
 
 }
