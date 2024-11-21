@@ -8,25 +8,30 @@ import org.example.desafiotools.enums.StatusFormaPagamento;
 import org.example.desafiotools.enums.StatusTransacao;
 import org.example.desafiotools.model.Transacao;
 import org.example.desafiotools.repository.TransacaoRepository;
+import org.example.desafiotools.util.BadRequestException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
-import java.util.Objects;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 
-@DataJpaTest
+@SpringBootTest
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
 class TransacaoServiceTest {
 
     @Mock
+    private TransacaoRepository transacaoRepositoryMock;
+
+    @Autowired
     private TransacaoRepository transacaoRepository;
 
     @Test
@@ -35,34 +40,62 @@ class TransacaoServiceTest {
         DetalhamentoTransacaoDTO detalhamentoTransacaoDto = createTransacaoDTO();
         Transacao transacao = new Transacao(detalhamentoTransacaoDto, detalhamentoTransacaoDto.getDescricao().getStatus());
 
-        when(transacaoRepository.save(any(Transacao.class))).thenReturn(transacao);
+        when(transacaoRepositoryMock.save(any(Transacao.class))).thenReturn(transacao);
 
-        TransacaoService transacaoService = new TransacaoService(transacaoRepository);
+        TransacaoService transacaoService = new TransacaoService(transacaoRepositoryMock);
 
         TransacaoDTO resultado = transacaoService.saveTransacao(detalhamentoTransacaoDto);
 
-        assertEquals(true, Objects.nonNull(resultado));
+        assertNotNull(resultado);
     }
 
     @Test
     @DisplayName("Teste de estorno da transação.")
     public void testEstornoTransacao() {
         Long id = 1L;
+        Transacao transacao = transacaoEstorno(StatusTransacao.AUTORIZADO);
 
-        Transacao transacao = new Transacao();
-        transacao.setStatus(StatusTransacao.AUTORIZADO);
-        transacao.setTipoPagamento(StatusFormaPagamento.AVISTA);
-        transacao.setCartao("1234567891234567");
+        when(transacaoRepositoryMock.findById(id)).thenReturn(java.util.Optional.of(transacao));
+        when(transacaoRepositoryMock.save(any(Transacao.class))).thenReturn(transacao);
 
-        when(transacaoRepository.findById(id)).thenReturn(java.util.Optional.of(transacao));
-        when(transacaoRepository.save(any(Transacao.class))).thenReturn(transacao);
-
-        TransacaoService transacaoService = new TransacaoService(transacaoRepository);
+        TransacaoService transacaoService = new TransacaoService(transacaoRepositoryMock);
 
         TransacaoDTO resultado = transacaoService.estornoTransacao(id);
 
-        assertEquals(true, Objects.nonNull(resultado));
-        assertEquals(StatusTransacao.CANCELADO, transacao.getStatus());
+        assertNotNull(resultado);
+        assertEquals(StatusTransacao.CANCELADO.name(), resultado.getTransacao().getDescricao().getStatus());
+    }
+
+    @Test
+    @DisplayName("Teste estorno que já foi estornado.")
+    public void testEstornoQueJaEstornado() {
+        Long id = 1L;
+        Transacao transacao = transacaoEstorno(StatusTransacao.CANCELADO);
+
+        when(transacaoRepositoryMock.findById(id)).thenReturn(java.util.Optional.of(transacao));
+
+        TransacaoService transacaoService = new TransacaoService(transacaoRepositoryMock);
+
+        assertThrows(BadRequestException.class, () -> transacaoService.estornoTransacao(id));
+    }
+
+    @Test
+    @DisplayName("Teste retornar transação cartão 'criptografado'.")
+    public void testRetornarCartaoCriptografado() {
+        TransacaoService transacaoService = new TransacaoService(transacaoRepository);
+        TransacaoDTO transacaoDTO = transacaoService.buscaTransacaoPorId(1L);
+
+        assertNotNull(transacaoDTO);
+        assertEquals("12**************89", transacaoDTO.getTransacao().getCartao());
+    }
+
+    private Transacao transacaoEstorno(StatusTransacao statusTransacao) {
+        Transacao transacao = new Transacao();
+        transacao.setStatus(statusTransacao);
+        transacao.setTipoPagamento(StatusFormaPagamento.AVISTA);
+        transacao.setCartao("1234567891234567");
+
+        return transacao;
     }
 
     private DetalhamentoTransacaoDTO createTransacaoDTO() {

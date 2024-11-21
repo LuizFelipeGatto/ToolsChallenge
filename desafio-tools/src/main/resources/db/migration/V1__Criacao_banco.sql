@@ -1,6 +1,5 @@
 CREATE SCHEMA desafio;
 
-
 CREATE TABLE desafio.transacao (
     id SERIAL NOT NULL,
     cartao VARCHAR(30),
