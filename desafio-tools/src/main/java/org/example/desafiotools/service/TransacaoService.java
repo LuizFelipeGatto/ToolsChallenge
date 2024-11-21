@@ -18,10 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -91,7 +88,7 @@ public class TransacaoService {
         descricaoDTO.setNsu(transacao.getNsu());
         descricaoDTO.setValor(transacao.getValor());
         descricaoDTO.setEstabelecimento(transacao.getEstabelecimento());
-        descricaoDTO.setDataHora(DataUtils.formataData(transacao.getDataHora()));
+        descricaoDTO.setDataHora(Objects.nonNull(transacao.getDataHora()) ? DataUtils.formataData(transacao.getDataHora()) : null);
 
         FormaPagamentoDTO formaPagamentoDTO = new FormaPagamentoDTO();
         formaPagamentoDTO.setTipo(transacao.getTipoPagamento().name());

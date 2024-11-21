@@ -26,7 +26,7 @@ O flyway criará automaticamente o schema no banco de dados e também a tabela d
 
 # API'S
 
-As operações serão as seguintes:
+As operações serão as seguintes: URL_BASE: 
 - Pagamento: método POST - http://localhost:8080/transacao
   
     OBS: Os campos faltantes no JSON de envio de pagamento serão gerados automaticamente via sistema, que são ``id`` e ``dataHora``. E o número do cartão no envio da transação irá o número todo e no retorno vem criptografado.
@@ -47,7 +47,7 @@ As operações serão as seguintes:
           }
         }
     
-- Estorno: método POST - http://localhost:8080/transacao/estorno/{id}
+- Estorno: método PATCH - http://localhost:8080/transacao/estorno/{id}
 
 
 

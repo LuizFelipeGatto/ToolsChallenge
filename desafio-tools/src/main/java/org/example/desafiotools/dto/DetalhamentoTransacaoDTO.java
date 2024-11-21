@@ -1,5 +1,6 @@
 package org.example.desafiotools.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -16,6 +17,7 @@ public class DetalhamentoTransacaoDTO {
 
     @NotBlank(message = Constants.VERIFIQUE_DADOS)
     @Pattern(regexp = "^[0-9]{19}$", message = "Número do cartão deve conter apenas números e ter entre 19 dígitos")
+    @JsonProperty
     private String cartao;
 
     private Long id;
