@@ -11,6 +11,8 @@ Escolhi desenvolver utilizando SpringBoot por ser a forma como trabalhei nos úl
   - Flyway
   - PostgreSQL
   - JUnit
+  - Mockito
+  - H2
 
 # Informações importantes
 
